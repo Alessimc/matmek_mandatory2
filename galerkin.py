@@ -112,10 +112,10 @@ class Legendre(FunctionSpace):
         return self.basis_function(j).deriv(k)
 
     def L2_norm_sq(self, N):
-        raise NotImplementedError
+        return np.array([2.0/(2*n+1) for n in range(N)])
 
     def mass_matrix(self):
-        raise NotImplementedError
+        return sparse.diags([self.L2_norm_sq(self.N+1)], [0], format='csr')
 
     def eval(self, uh, xj):
         xj = np.atleast_1d(xj)
