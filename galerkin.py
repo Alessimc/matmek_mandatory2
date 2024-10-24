@@ -140,10 +140,10 @@ class Chebyshev(FunctionSpace):
         return 1/sp.sqrt(1-x**2)
 
     def L2_norm_sq(self, N):
-        raise NotImplementedError
+        raise np.array([np.pi] + [np.pi/2]*(N-1))
 
     def mass_matrix(self):
-        raise NotImplementedError
+        raise sparse.diags([self.L2_norm_sq(self.N+1)], [0], format='csr')
 
     def eval(self, uh, xj):
         xj = np.atleast_1d(xj)
