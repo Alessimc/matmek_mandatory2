@@ -76,7 +76,10 @@ class FunctionSpace:
         return P
 
     def eval_derivative_basis_function_all(self, Xj, k=1):
-        raise NotImplementedError
+        P = np.zeros((len(Xj), self.N+1))
+        for j in range(self.N+1):
+            P[:, j] = self.evaluate_derivative_basis_function(Xj, j, k=k)
+        return P
 
     def inner_product(self, u):
         us = map_expression_true_domain(
