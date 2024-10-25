@@ -112,10 +112,10 @@ class Legendre(FunctionSpace):
         return self.basis_function(j).deriv(k)
 
     def L2_norm_sq(self, N):
-        return np.array([2.0/(2*n+1) for n in range(N)])
+        return np.array([2.0/(2*n+1) for n in range(N+1)])
 
     def mass_matrix(self):
-        return sparse.diags([self.L2_norm_sq(self.N+1)], [0], format='csr')
+        return sparse.diags(self.L2_norm_sq(self.N), [0], format='csr')
 
     def eval(self, uh, xj):
         xj = np.atleast_1d(xj)
@@ -140,10 +140,10 @@ class Chebyshev(FunctionSpace):
         return 1/sp.sqrt(1-x**2)
 
     def L2_norm_sq(self, N):
-        raise np.array([np.pi] + [np.pi/2]*(N-1))
+        return np.array([np.pi] + [np.pi/2]*(N))
 
     def mass_matrix(self):
-        raise sparse.diags([self.L2_norm_sq(self.N+1)], [0], format='csr')
+        return sparse.diags(self.L2_norm_sq(self.N), 0, format='csr')
 
     def eval(self, uh, xj):
         xj = np.atleast_1d(xj)
@@ -225,7 +225,7 @@ class Cosines(Trigonometric):
             return lambda Xj: -scale*np.sin(j*np.pi*Xj)
 
     def L2_norm_sq(self, N):
-        return np.array([1.0] + [0.5]*(N-1))
+        return np.array([1.0] + [0.5]*N)
     
 # Create classes to hold the boundary function
 
@@ -300,15 +300,23 @@ class DirichletLegendre(Composite, Legendre):
         self.S = sparse.diags((1, -1), (0, 2), shape=(N+1, N+3), format='csr')
 
     def basis_function(self, j, sympy=False):
-        raise NotImplementedError
+        if sympy:
+            return sp.legendre(j, x) - sp.legendre(j+2, x)
+        return Leg.basis(j) - Leg.basis(j+2)
 
 
 class NeumannLegendre(Composite, Legendre):
     def __init__(self, N, domain=(-1, 1), bc=(0, 0), constraint=0):
-        raise NotImplementedError
+        Legendre.__init__(self, N, domain=domain)
+        self.B = Neumann(bc, domain, self.reference_domain)
+        self.S = sparse.diags((1, -1), (0, 2), shape=(N+1, N+3), format='csr')
+        self.constraint = constraint
 
     def basis_function(self, j, sympy=False):
-        raise NotImplementedError
+        weight = (j*(j+1)) / ((j+2)*(j+3))
+        if sympy:
+            return sp.legendre(j, x) - weight * sp.legendre(j+2, x)
+        return Leg.basis(j) - weight * Leg.basis(j+2)
 
 
 class DirichletChebyshev(Composite, Chebyshev):
@@ -326,10 +334,17 @@ class DirichletChebyshev(Composite, Chebyshev):
 
 class NeumannChebyshev(Composite, Chebyshev):
     def __init__(self, N, domain=(-1, 1), bc=(0, 0), constraint=0):
-        raise NotImplementedError
+        Chebyshev.__init__(self, N, domain=domain)
+        self.B = Neumann(bc, domain, self.reference_domain)
+        self.S = sparse.diags((1, -1), (0, 2), shape=(N+1, N+3), format='csr')
+        self.constraint = constraint 
+
 
     def basis_function(self, j, sympy=False):
-        raise NotImplementedError
+        weight = (j /(j+2))**2
+        if sympy:
+            return sp.cos(j*sp.acos(x)) - weight * sp.cos((j+2)*sp.acos(x))
+        return Cheb.basis(j)- weight * Cheb.basis(j+2)
 
 
 class BasisFunction:
