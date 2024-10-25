@@ -115,12 +115,16 @@ class Legendre(FunctionSpace):
         return np.array([2.0/(2*n+1) for n in range(N+1)])
 
     def mass_matrix(self):
-        return sparse.diags(self.L2_norm_sq(self.N), [0], format='csr')
+        return sparse.diags(self.L2_norm_sq(self.N), 0, format='csr')
 
     def eval(self, uh, xj):
         xj = np.atleast_1d(xj)
         Xj = map_reference_domain(xj, self.domain, self.reference_domain)
         return np.polynomial.legendre.legval(Xj, uh)
+    
+    @property
+    def reference_domain(self):
+        return (-1, 1)
 
 
 class Chebyshev(FunctionSpace):
@@ -140,7 +144,7 @@ class Chebyshev(FunctionSpace):
         return 1/sp.sqrt(1-x**2)
 
     def L2_norm_sq(self, N):
-        return np.array([np.pi] + [np.pi/2]*(N))
+        return np.array([np.pi] + [np.pi/2]*N)
 
     def mass_matrix(self):
         return sparse.diags(self.L2_norm_sq(self.N), 0, format='csr')
@@ -165,6 +169,10 @@ class Chebyshev(FunctionSpace):
             def uv(Xj, j): return us(Xj) * basis(j, Xj)
             uj[i] = float(h) * quad(uv, 0, np.pi, args=(i,))[0]
         return uj
+    
+    @property
+    def reference_domain(self):
+        return (-1, 1)
 
 class Trigonometric(FunctionSpace):
     """Base class for trigonometric function spaces"""
